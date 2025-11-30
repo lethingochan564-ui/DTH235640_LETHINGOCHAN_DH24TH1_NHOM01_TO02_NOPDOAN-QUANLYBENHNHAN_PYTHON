@@ -1,0 +1,115 @@
+DROP DATABASE IF EXISTS QuanLyBenhNhan;
+CREATE DATABASE QuanLyBenhNhan
+DEFAULT CHARACTER SET utf8mb4 
+COLLATE utf8mb4_unicode_ci;
+USE QuanLyBenhNhan;
+
+CREATE TABLE BENHNHAN(
+	MABN VARCHAR(5) PRIMARY KEY,
+	HOTEN VARCHAR(100) NOT NULL,
+	DIENTHOAI VARCHAR(10) UNIQUE NOT NULL,
+	NGAYSINH DATE,
+    GIOITINH VARCHAR(3) CHECK(GIOITINH IN ('Nam','Nữ')),
+    DIACHI VARCHAR(100),
+    MA_BHYT VARCHAR(30)
+) ENGINE=InnoDB;
+
+
+CREATE TABLE BACSI(
+	MABS varchar(5) PRIMARY KEY,
+    TENBS varchar(50),
+    CHUCVU VARCHAR(25) CHECK (CHUCVU IN ('Bác sĩ chính thức','Bác sĩ thực tập')),
+    KHOA VARCHAR(10) CHECK (KHOA IN ('Nội','Ngoại')),
+    DIENTHOAI VARCHAR(10) UNIQUE NOT NULL,
+	NGAYSINH DATE,
+    DIACHI VARCHAR(100),
+    GIOITINH VARCHAR(3) CHECK(GIOITINH IN ('Nam','Nữ')),
+    TAIKHOAN VARCHAR(10),
+    MATKHAU VARCHAR(5)
+) ENGINE=InnoDB;
+    
+
+CREATE TABLE NHANVIEN(
+    MANV VARCHAR(5) PRIMARY KEY,
+    TENNV VARCHAR(50), 
+    TAIKHOAN VARCHAR(10) UNIQUE NOT NULL,
+    MATKHAU VARCHAR(5)
+) ENGINE=InnoDB;
+
+
+CREATE TABLE THUOC(
+    MATHUOC VARCHAR(10) PRIMARY KEY,
+    TENTHUOC VARCHAR(100),
+    SOLUONG VARCHAR(5),
+    DONVITINH VARCHAR(10) CHECK (DONVITINH IN('Hộp','Vỉ','Viên','Ống','Gói','Tuýp','Lọ','Chai')),
+    DONGIA FLOAT
+) ENGINE=InnoDB;
+
+
+CREATE TABLE DATLICH(
+    MADAT INT AUTO_INCREMENT PRIMARY KEY,
+    MABN VARCHAR(5) NOT NULL, 
+    MABS VARCHAR(5),
+    NGAYDAT DATE,
+    THOIGIAN time,
+    TRIEUCHUNG VARCHAR(100),
+    FOREIGN KEY (MABN) REFERENCES BENHNHAN(MABN) ON DELETE CASCADE,
+    FOREIGN KEY (MABS) REFERENCES BACSI(MABS) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+
+CREATE TABLE HOADON_KHAMBENH(
+    MAHD INT AUTO_INCREMENT PRIMARY KEY,
+    MABN VARCHAR(5),
+    MABS VARCHAR(5),
+    NGAYKHAM DATE,
+    MATHUOC VARCHAR(10),
+    TRIEUCHUNG VARCHAR(100),
+    FOREIGN KEY (MABN) REFERENCES BENHNHAN(MABN) ON DELETE CASCADE,
+    FOREIGN KEY (MABS) REFERENCES BACSI(MABS) ON DELETE CASCADE,
+    FOREIGN KEY (MATHUOC) REFERENCES THUOC(MATHUOC) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+
+INSERT INTO NHANVIEN (MANV, TENNV, TAIKHOAN, MATKHAU) VALUES
+	('NV001', 'Trần Thụy Thanh Thủy', 'NV01', '00000');
+
+
+INSERT INTO BACSI (MABS, TENBS, CHUCVU, KHOA , DIENTHOAI, GIOITINH, DIACHI, NGAYSINH, TAIKHOAN, MATKHAU) VALUES
+	('BS001', 'Nguyễn Văn Hưng', 'Bác sĩ chính thức','Nội', '0987654321', 'Nam', 'Long Xuyên', '1990-05-15', 'BSCT1', 'CT001'),
+	('BS002', 'Trần Thị Diễm', 'Bác sĩ thực tập','Ngoại', '0901234567', 'Nữ', 'Chợ Mới', '1980-11-20', 'BSTT0', 'TT001'),
+	('BS003', 'Hoàng Xuân Vinh', 'Bác sĩ thực tập','Ngoại', '0912345678', 'Nam', 'Bình Mỹ- An Giang', '1995-02-10', 'BSTT1', 'TT002'),
+	('BS004', 'Phạm Huỳnh Thúy An', 'Bác sĩ chính thức','Ngoại', '0968889999', 'Nữ', 'Đông Xuyên- Long Xuyên- An Giang', '1997-07-25', 'BSCT2', 'CT002'),
+	('BS005', 'Trương Đình Hoàng', 'Bác sĩ thực tập','Nội', '0977665544', 'Nam', 'Bình Khánh- An Giang', '2000-01-01', 'BSTT2', 'TT004');
+
+
+INSERT INTO BENHNHAN (MABN, HOTEN, DIENTHOAI, GIOITINH, NGAYSINH, DIACHI, MA_BHYT) VALUES
+	('BN001', 'Trần Hoàng Quân', '0987654921', 'Nam',  '1998-05-20', 'Long Xuyên','1014523125'),
+	('BN002', 'Phạm Kiều Thu', '0901234767', 'Nữ',  '1999-03-08','Châu Đốc','1097583501'),
+    ('BN003', 'Nguyễn Văn Thế', '0912344678', 'Nam', '2002-02-02',  'Bình Mỹ- An Giang','1062378926'),
+	('BN004', 'Nguyễn Ngọc Châu', '0968089999', 'Nữ', '1997-07-30', 'Chợ Mới- An Giang','1035773290'),
+	('BN005', 'Lê Quỳnh Thư', '0977665524', 'Nữ', '2002-01-19', 'Châu Đốc- An Giang','1025644893');
+	
+
+INSERT INTO THUOC (MATHUOC, TENTHUOC, SOLUONG, DONVITINH, DONGIA) VALUES 
+    ('T001', 'Paracetamol 500mg', '100', 'Viên', 1000),
+    ('T002', 'Panadol Extra', '50', 'Vỉ', 1500),
+    ('T003', 'Amoxicillin 500mg', '200', 'Viên', 2500),
+    ('T004', 'Vitamin C', '100', 'Hộp', 2000),
+    ('T005', 'Berberin', '50', 'Lọ', 5000),
+    ('T006', 'Efferalgan 500mg', '200', 'Viên', 3000),
+    ('T007', 'Ibuprofen 400mg', '100', 'Viên', 2000),
+    ('T008', 'Cephalexin 500mg', '150', 'Viên', 1500),
+    ('T009', 'Thuốc ho Prospan', '20', 'Chai', 85000),
+    ('T010', 'Smecta (Thuốc tiêu hóa)', '50', 'Gói', 4000),
+    ('T011', 'Omeprazol 20mg (Dạ dày)', '100', 'Viên', 2500),
+    ('T012', 'C sủi Plusssz', '30', 'Tuýp', 35000),
+    ('T013', 'Nước muối sinh lý', '50', 'Chai', 5000),
+    ('T014', 'Salonpas Gel', '20', 'Tuýp', 45000),
+    ('T015', 'Hoạt huyết dưỡng não', '40', 'Hộp', 90000);
+
+    SELECT * FROM BACSI;
+    SELECT * FROM BENHNHAN;
+    SELECT * FROM THUOC;
+    
+ALTER TABLE HOADON_KHAMBENH ADD COLUMN CHUANDOAN VARCHAR(255);
