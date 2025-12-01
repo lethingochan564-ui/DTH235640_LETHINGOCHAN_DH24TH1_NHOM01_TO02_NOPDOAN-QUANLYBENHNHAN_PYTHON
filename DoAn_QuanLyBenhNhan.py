@@ -4,6 +4,8 @@ from tkinter import messagebox
 from datetime import datetime
 from tkcalendar import DateEntry
 import mysql.connector
+import pandas as pd
+from tkinter import filedialog
 
 # Cấu hình kết nối Database
 db_connect = {
@@ -928,51 +930,109 @@ class QuanLyKhamBenh:
             entry.grid(row=i, column=1, padx=10, pady=15); self.entries_kham[text] = entry
 
         # Khung thuốc
-        frame_thuoc = LabelFrame(self.root, text="Thuốc", font=("Times New Roman", 12, "bold"), bg="#B2EBF2")
-        frame_thuoc.place(x=570, y=60, width=410, height=280)
+        frame_thuoc = LabelFrame(self.root, text="Kê đơn thuốc", font=("Times New Roman", 12, "bold"), bg="#B2EBF2")
+        frame_thuoc.place(x=570, y=60, width=410, height=380) 
         self.entries_thuoc = {}
 
+        # 1. Các ô nhập liệu (Giữ nguyên)
+        Label(frame_thuoc, text="Mã thuốc", font=("Times New Roman", 10), bg="#B2EBF2").place(x=10, y=25)
+        self.ent_ma_thuoc = Entry(frame_thuoc, font=("Times New Roman", 10), width=10)
+        self.ent_ma_thuoc.place(x=80, y=25)
 
-        # Các nhãn và ô nhập liệu thuốc
-        Label(frame_thuoc, text="Mã thuốc", font=("Times New Roman", 12), bg="#B2EBF2").place(x=20, y=30)
-        self.ent_ma_thuoc = Entry(frame_thuoc, font=("Times New Roman", 12), width=30); 
-        self.ent_ma_thuoc.place(x=100, y=30)
-
-        Label(frame_thuoc, text="Tên thuốc", font=("Times New Roman", 12), bg="#B2EBF2").place(x=20, y=80)
-        self.cbo_ten_thuoc = ttk.Combobox(frame_thuoc, font=("Times New Roman", 12), width=28, state="readonly"); 
-        self.cbo_ten_thuoc.place(x=100, y=80)
+        Label(frame_thuoc, text="Tên thuốc", font=("Times New Roman", 10), bg="#B2EBF2").place(x=170, y=25)
+        self.cbo_ten_thuoc = ttk.Combobox(frame_thuoc, font=("Times New Roman", 10), width=18, state="readonly")
+        self.cbo_ten_thuoc.place(x=240, y=25)
         self.cbo_ten_thuoc.bind("<<ComboboxSelected>>", self.on_select_medicine)
-
+        
         self.load_medicine_data()
 
-        Label(frame_thuoc, text="Số lượng", font=("Times New Roman", 12), bg="#B2EBF2").place(x=20, y=130)
-        self.ent_so_luong = Entry(frame_thuoc, font=("Times New Roman", 12), width=10); 
-        self.ent_so_luong.place(x=100, y=130)
+        Label(frame_thuoc, text="Số lượng", font=("Times New Roman", 10), bg="#B2EBF2").place(x=10, y=60)
+        self.ent_so_luong = Entry(frame_thuoc, font=("Times New Roman", 10), width=10)
+        self.ent_so_luong.place(x=80, y=60)
 
-        Label(frame_thuoc, text="Đơn giá", font=("Times New Roman", 12), bg="#B2EBF2").place(x=20, y=180)
-        self.ent_don_gia = Entry(frame_thuoc, font=("Times New Roman", 12), width=15); 
-        self.ent_don_gia.place(x=100, y=180)
+        Label(frame_thuoc, text="Đơn giá", font=("Times New Roman", 10), bg="#B2EBF2").place(x=170, y=60)
+        self.ent_don_gia = Entry(frame_thuoc, font=("Times New Roman", 10), width=15)
+        self.ent_don_gia.place(x=240, y=60)
 
-        Label(frame_thuoc, text="VND", font=("Times New Roman", 12, "bold"), bg="#B2EBF2").place(x=300, y=180)
+        # 2. Bảng danh sách thuốc đã chọn 
+        cols_thuoc = ("Mã", "Tên thuốc", "SL", "Đ.Giá", "T.Tiền")
+        self.tree_ds_thuoc = ttk.Treeview(frame_thuoc, columns=cols_thuoc, show="headings", height=8)
+        
+        self.tree_ds_thuoc.heading("Mã", text="Mã"); self.tree_ds_thuoc.column("Mã", width=40)
+        self.tree_ds_thuoc.heading("Tên thuốc", text="Tên thuốc"); self.tree_ds_thuoc.column("Tên thuốc", width=120)
+        self.tree_ds_thuoc.heading("SL", text="SL"); self.tree_ds_thuoc.column("SL", width=35)
+        self.tree_ds_thuoc.heading("Đ.Giá", text="Đ.Giá"); self.tree_ds_thuoc.column("Đ.Giá", width=80)
+        self.tree_ds_thuoc.heading("T.Tiền", text="T.Tiền"); self.tree_ds_thuoc.column("T.Tiền", width=90)
+        
+        self.tree_ds_thuoc.place(x=5, y=95, width=395, height=200)
 
-        # Khung nút chức năng
+        # 3. Nút Thêm/Xóa 
+        Button(frame_thuoc, text="Thêm thuốc", command=self.them_thuoc_vao_list, bg="#98FB98", width=12).place(x=80, y=310)
+        Button(frame_thuoc, text="Xóa thuốc", command=self.xoa_thuoc_khoi_list, bg="#FFB6C1", width=10).place(x=200, y=310)
+       # Khung nút chức năng 
         frame_btn_action = Frame(self.root, bg="#E0F7FA")
-        frame_btn_action.place(x=570, y=350, width=410, height=60)
+        frame_btn_action.place(x=570, y=450, width=410, height=60)
 
-        # Chia khung
+        # Chia làm 3 cột
         frame_btn_action.grid_columnconfigure(0, weight=1)
         frame_btn_action.grid_columnconfigure(1, weight=1)
+        frame_btn_action.grid_columnconfigure(2, weight=1)
 
-        # Nút Xuất hóa đơn 
-        Button(frame_btn_action, text="Xuất phiếu khám", command=self.xuat_hoa_don, 
-               font=("Times New Roman", 12, "bold"), bg="#FFC0CB", 
-               width=15, height=2).grid(row=0, column=0, padx=5, pady=5)
+        # Nút 1: Lưu & In
+        Button(frame_btn_action, text="Lưu & In", command=self.xuat_hoa_don, 
+               font=("Times New Roman", 11, "bold"), bg="#FFC0CB", 
+               width=12, height=2).grid(row=0, column=0, padx=2)
 
-        # Nút Hủy 
+        # Nút 2: Xuất Excel (MỚI)
+        Button(frame_btn_action, text="Xuất Excel", command=self.xuat_excel, 
+               font=("Times New Roman", 11, "bold"), bg="#98FB98", 
+               width=12, height=2).grid(row=0, column=1, padx=2)
+
+        # Nút 3: Hủy
         Button(frame_btn_action, text="Hủy", command=self.huy_kham, 
-               font=("Times New Roman", 12, "bold"), bg="#D3D3D3", 
-               width=15, height=2).grid(row=0, column=1, padx=5, pady=5)
+               font=("Times New Roman", 11, "bold"), bg="#D3D3D3", 
+               width=12, height=2).grid(row=0, column=2, padx=2)
 
+       
+        # Hàm thêm thuốc vào bảng danh sách
+    def them_thuoc_vao_list(self):
+        try:
+            ma = self.ent_ma_thuoc.get()
+            ten = self.cbo_ten_thuoc.get()
+            sl = int(self.ent_so_luong.get())
+            dg = float(self.ent_don_gia.get())
+            tt = sl * dg
+            
+            if sl <= 0: raise ValueError
+
+            found = False
+            for item in self.tree_ds_thuoc.get_children():
+                val = self.tree_ds_thuoc.item(item)['values']
+                if str(val[0]) == ma:
+                     # Trùng mã thuốc
+                    new_sl = int(val[2]) + sl
+                    new_tt = new_sl * dg
+                    self.tree_ds_thuoc.item(item, values=(ma, ten, new_sl, int(dg), int(new_tt)))
+                    found = True
+                    break
+            
+            if not found:
+                self.tree_ds_thuoc.insert("", END, values=(ma, ten, sl, int(dg), int(tt)))
+            
+            # Làm mới ô nhập
+            self.ent_so_luong.delete(0, END)
+            self.ent_ma_thuoc.delete(0, END)
+            self.ent_don_gia.delete(0, END)
+            self.cbo_ten_thuoc.set('')
+
+        except ValueError:
+            messagebox.showwarning("Lỗi", "Vui lòng nhập số lượng hợp lệ!")
+
+    # Hàm xóa dòng thuốc đang chọn
+    def xoa_thuoc_khoi_list(self):
+        sel = self.tree_ds_thuoc.selection()
+        if sel:
+            self.tree_ds_thuoc.delete(sel)
 
     # Hàm căn giữa cửa sổ
     def center_window(self, width, height):
@@ -1058,97 +1118,167 @@ class QuanLyKhamBenh:
             self.ent_don_gia.delete(0, END); 
             self.ent_don_gia.insert(0, str(int(data["price"])))
 
+    # Hàm thêm thuốc vào bảng 
+    def them_thuoc_vao_list(self):
+        try:
+            ma = self.ent_ma_thuoc.get()
+            ten = self.cbo_ten_thuoc.get()
+            sl_str = self.ent_so_luong.get()
+            dg_str = self.ent_don_gia.get()
+
+            if not ma or not sl_str:
+                messagebox.showwarning("Thiếu thông tin", "Vui lòng chọn thuốc và nhập số lượng!")
+                return
+
+            sl = int(sl_str)
+            dg = float(dg_str)
+            tt = sl * dg
+            
+            if sl <= 0: raise ValueError
+
+            # Kiểm tra trùng lặp để cộng số lượng
+            found = False
+            for item in self.tree_ds_thuoc.get_children():
+                val = self.tree_ds_thuoc.item(item)['values']
+                if str(val[0]) == ma: # Nếu trùng mã thuốc
+                    new_sl = int(val[2]) + sl
+                    new_tt = new_sl * dg
+                    self.tree_ds_thuoc.item(item, values=(ma, ten, new_sl, int(dg), int(new_tt)))
+                    found = True
+                    break
+            
+            if not found:
+                self.tree_ds_thuoc.insert("", END, values=(ma, ten, sl, int(dg), int(tt)))
+            
+            # Reset ô nhập sau khi thêm
+            self.ent_so_luong.delete(0, END)
+            self.ent_ma_thuoc.delete(0, END)
+            self.ent_don_gia.delete(0, END)
+            self.cbo_ten_thuoc.set('')
+
+        except ValueError:
+            messagebox.showwarning("Lỗi", "Số lượng phải là số nguyên dương!")
+
+    # Hàm xóa thuốc nếu chọn sai
+    def xoa_thuoc_khoi_list(self):
+        sel = self.tree_ds_thuoc.selection()
+        if sel:
+            self.tree_ds_thuoc.delete(sel)
+        else:
+            messagebox.showinfo("Thông báo", "Vui lòng chọn dòng thuốc cần xóa!")
+
 
     # Hàm xuất hóa đơn
     def xuat_hoa_don(self):
+        # Tất cả thuốc trong danh sách
+        items = self.tree_ds_thuoc.get_children()
+        if not items:
+            messagebox.showwarning("Lỗi", "Danh sách thuốc đang trống!")
+            return
+
         try:
-            sl_str = self.ent_so_luong.get()
-            if not sl_str.strip():
-                messagebox.showerror("Lỗi", "Vui lòng nhập số lượng thuốc!")
-                return
-                
-            sl = int(sl_str)
-            if sl <= 0: raise ValueError
-            
-            gia = float(self.ent_don_gia.get())
-            tong_tien = sl * gia
-            
-            # Lấy thông tin chẩn đoán
+            # Lấy thông tin chung
             trieu_chung = self.entries_kham["Triệu Chứng"].get()
-            chuan_doan = self.entries_kham["Chuẩn đoán"].get() 
-            ten_thuoc = self.cbo_ten_thuoc.get()
-            ma_thuoc = self.ent_ma_thuoc.get()
+            chuan_doan = self.entries_kham["Chuẩn đoán"].get()
             ma_bn = self.entries_kham["Mã bệnh nhân"].get()
             ma_bs = self.entries_kham["Mã bác sĩ"].get()
             ngay_gio = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
-            # 2. Lưu vào Database
             conn = get_connection()
             if conn:
                 try:
                     cursor = conn.cursor()
-                    sql = "INSERT INTO HOADON_KHAMBENH (MABN, MABS, NGAYKHAM, MATHUOC, TRIEUCHUNG, CHUANDOAN) VALUES (%s, %s, NOW(), %s, %s, %s)"
-                    val = (ma_bn, ma_bs, ma_thuoc, trieu_chung, chuan_doan)
+                    # Câu lệnh Insert có thêm cột SOLUONG
+                    sql = "INSERT INTO HOADON_KHAMBENH (MABN, MABS, NGAYKHAM, MATHUOC, SOLUONG, TRIEUCHUNG, CHUANDOAN) VALUES (%s, %s, NOW(), %s, %s, %s, %s)"
                     
-                    cursor.execute(sql, val)
+                    tong_tien_hoadon = 0
+                    bill_details = ""
+
+                    # Duyệt từng dòng trong bảng thuốc
+                    for item in items:
+                        val = self.tree_ds_thuoc.item(item)['values']
+                        #[Mã, Tên, SL, ĐG, Thành Tiền]
+                        ma_thuoc = str(val[0])
+                        ten_thuoc = val[1]
+                        sl = int(val[2])
+                        dg = float(val[3])
+                        thanhtien = float(val[4])
+
+                        tong_tien_hoadon += thanhtien
+                        
+                        # Tạo text cho hóa đơn
+                        bill_details += f"{ten_thuoc:<20} SL:{sl:<3} {thanhtien:,.0f} đ\n"
+
+                        # Lưu từng thuốc vào DB
+                        cursor.execute(sql, (ma_bn, ma_bs, ma_thuoc, sl, trieu_chung, chuan_doan))
+
                     conn.commit()
                 except Exception as err:
-                    messagebox.showerror("Lỗi Database", f"Không lưu được vào DB (kiểm tra lại cột CHUANDOAN): {err}")
-                    return 
+                    conn.rollback()
+                    messagebox.showerror("Lỗi Database", f"Lỗi khi lưu: {err}")
+                    return
                 finally:
                     conn.close()
 
-            # TẠO GIAO DIỆN HÓA ĐƠN
+            # Hóa đơn
             bill_window = Toplevel(self.root)
             bill_window.title("Phiếu Khám")
-            bill_window.geometry("500x600")
+            bill_window.geometry("500x650")
             bill_window.config(bg="white")
 
-            # Tiêu đề
-            Label(bill_window, text="PHIẾU KHÁM & ĐƠN THUỐC", font=("Times New Roman", 16, "bold"), bg="white").pack(pady=5)
-            Label(bill_window, text=f"Ngày: {ngay_gio}", font=("Times New Roman", 10), bg="white").pack()
+            Label(bill_window, text="PHIẾU KHÁM & ĐƠN THUỐC", font=("Times New Roman", 16, "bold"), bg="white").pack(pady=10)
+            Label(bill_window, text=f"Ngày: {ngay_gio}", bg="white").pack()
             
-            # Đường kẻ
-            Frame(bill_window, height=2, bd=1, relief=SUNKEN).pack(fill=X, padx=20, pady=10)
-
-            # Nội dung hóa đơn
-            content_frame = Frame(bill_window, bg="white")
-            content_frame.pack(fill=BOTH, expand=True, padx=30)
-
-            info_text = f"""
-            THÔNG TIN BỆNH NHÂN
+            content_text = f"""
+            THÔNG TIN:
+            Bệnh nhân:             {ma_bn}
+            Bác sĩ   :             {ma_bs}
+            Chẩn đoán:             {chuan_doan}
+           
+            CHI TIẾT ĐƠN THUỐC:
             
-            Mã bệnh nhân : {ma_bn}
-            Mã bác sĩ    : {ma_bs}
+            {bill_details}
             
-            CHẨN ĐOÁN
-            
-            Triệu chứng  : {trieu_chung}
-            Chẩn đoán    : {chuan_doan}
-
-            ĐƠN THUỐC & THANH TOÁN
-            
-            Tên thuốc    : {ten_thuoc}
-            Số lượng     : {sl}
-            Đơn giá      : {gia:,.0f} VNĐ
-
             """
+            Label(bill_window, text=content_text, font=("Courier New", 11), bg="white", justify=LEFT).pack(padx=10)
             
-            lbl_info = Label(content_frame, text=info_text, font=("Courier New", 12), bg="white", justify=LEFT, anchor="w")
-            lbl_info.pack(fill=X)
+            Label(bill_window, text=f"TỔNG CỘNG: {tong_tien_hoadon:,.0f} VNĐ", font=("Times New Roman", 16, "bold"), fg="red", bg="white").pack(pady=10)
 
-            # Tổng tiền 
-            total_frame = Frame(bill_window, bg="#F0F8FF", bd=1, relief=SOLID)
-            total_frame.pack(fill=X, padx=20, pady=20)
-            Label(total_frame, text=f"TỔNG CỘNG: {tong_tien:,.0f} VNĐ", font=("Times New Roman", 18, "bold"),
-                   bg="#F0F8FF", fg="red").pack(pady=10)
+            Button(bill_window, text="Đóng", command=bill_window.destroy, bg="#FFC0CB").pack(pady=10)
+            
+            # Xóa thông tin trong bảng sau khi xuất thành công
+            for item in items:
+                self.tree_ds_thuoc.delete(item)
 
-            # Nút đóng
-            Button(bill_window, text="In Phiếu / Đóng", command=bill_window.destroy, 
-                   bg="#FFC0CB", font=("Times New Roman", 12)).pack(pady=10)
+        except Exception as e:
+            messagebox.showerror("Lỗi", f"Có lỗi xảy ra: {e}")
 
-        except ValueError: 
-            messagebox.showerror("Lỗi", "Số lượng phải là số nguyên dương!")
+    def xuat_excel(self):
+        conn = get_connection() # Đảm bảo bạn có hàm này ở ngoài class
+        if conn:
+            try:
+                # Lấy dữ liệu từ bảng HOADON_KHAMBENH (kết với bảng THUOC nếu cần tên thuốc)
+                query = "SELECT * FROM HOADON_KHAMBENH ORDER BY NGAYKHAM DESC"
+                df = pd.read_sql(query, conn)
+                
+                if df.empty:
+                    messagebox.showinfo("Thông báo", "Không có dữ liệu để xuất!")
+                    return
+
+                file_path = filedialog.asksaveasfilename(
+                    defaultextension=".xlsx",
+                    filetypes=[("Excel files", "*.xlsx"), ("All files", "*.*")],
+                    title="Lưu file Excel"
+                )
+
+                if file_path:
+                    df.to_excel(file_path, index=False)
+                    messagebox.showinfo("Thành công", f"Đã xuất file tại:\n{file_path}")
+                
+            except Exception as e:
+                messagebox.showerror("Lỗi", f"Lỗi khi xuất Excel: {e}")
+            finally:
+                conn.close()
 
     # Hàm hủy khám
     def huy_kham(self):
